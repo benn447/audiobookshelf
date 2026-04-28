@@ -109,7 +109,12 @@ module.exports.downloadPodcastEpisode = (podcastEpisodeDownload) => {
     // Some podcasts fail due to user agent strings
     // See: https://github.com/advplyr/audiobookshelf/issues/3246 (requires iTMS user agent)
     // See: https://github.com/advplyr/audiobookshelf/issues/4401 (requires no iTMS user agent)
-    const userAgents = ['audiobookshelf (+https://audiobookshelf.org; like iTMS)', 'audiobookshelf (+https://audiobookshelf.org)']
+    let userAgents = ['audiobookshelf (+https://audiobookshelf.org; like iTMS)', 'audiobookshelf (+https://audiobookshelf.org)']
+
+    // Patreon rejects the default user agents
+    if (/^https?:\/\/(?:[^/]+\.)?patreon\.com\//i.test(podcastEpisodeDownload.url)) {
+      userAgents = ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36']
+    }
 
     let response = null
     let lastError = null
