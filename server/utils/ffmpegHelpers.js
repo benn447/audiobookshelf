@@ -6,6 +6,7 @@ const fs = require('../libs/fsExtra')
 const Path = require('path')
 const Logger = require('../Logger')
 const { filePathToPOSIX, copyToExisting } = require('./fileUtils')
+const { getProxyAgent } = require('./proxyAgent')
 
 function escapeSingleQuotes(path) {
   // A ' within a quoted string is escaped with '\'' in ffmpeg (see https://www.ffmpeg.org/ffmpeg-utils.html#Quoting-and-escaping)
@@ -119,19 +120,22 @@ module.exports.downloadPodcastEpisode = (podcastEpisodeDownload) => {
     let response = null
     let lastError = null
 
+    const agent = global.DisableSsrfRequestFilter?.(podcastEpisodeDownload.url) ? getProxyAgent(podcastEpisodeDownload.url) : ssrfFilter(podcastEpisodeDownload.url)
+
     for (const userAgent of userAgents) {
       try {
         response = await axios({
           url: podcastEpisodeDownload.url,
           method: 'GET',
           responseType: 'stream',
+          proxy: false,
           headers: {
             Accept: '*/*',
             'User-Agent': userAgent
           },
           timeout: global.PodcastDownloadTimeout,
-          httpAgent: global.DisableSsrfRequestFilter?.(podcastEpisodeDownload.url) ? null : ssrfFilter(podcastEpisodeDownload.url),
-          httpsAgent: global.DisableSsrfRequestFilter?.(podcastEpisodeDownload.url) ? null : ssrfFilter(podcastEpisodeDownload.url)
+          httpAgent: agent,
+          httpsAgent: agent
         })
 
         Logger.debug(`[ffmpegHelpers] Successfully connected with User-Agent: ${userAgent}`)
