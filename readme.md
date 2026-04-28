@@ -81,6 +81,23 @@ See [install docs](https://www.audiobookshelf.org/docs)
 
 <br />
 
+# Outbound HTTP Proxy (experimental)
+
+Audiobookshelf can route its outbound HTTP requests (RSS feeds, podcast episode downloads, cover art, metadata lookups) through a forward proxy such as Squid, Privoxy, or Tinyproxy. This is useful when the host running ABS does not have direct internet access, or when a specific source (e.g. Patreon RSS) requires routing through a particular network egress.
+
+To enable, set the following environment variables on the container:
+
+```
+EXP_PROXY_SUPPORT=1
+HTTPS_PROXY=http://<proxy-host>:<port>
+HTTP_PROXY=http://<proxy-host>:<port>
+NO_PROXY=localhost,127.0.0.1
+```
+
+`EXP_PROXY_SUPPORT=1` opts in to the experimental proxy code path and disables the SSRF request filter (required so the proxy host itself, often on a private IP, is reachable). HTTPS targets are tunneled via `CONNECT`, so strict proxies like Squid work correctly. `NO_PROXY` accepts a comma-separated list of hostnames and `.suffix` patterns, plus `*` to bypass the proxy entirely.
+
+<br />
+
 # Reverse Proxy Set Up
 
 #### Important! Audiobookshelf requires a websocket connection.

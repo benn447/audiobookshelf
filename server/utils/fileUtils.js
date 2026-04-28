@@ -6,6 +6,7 @@ const fs = require('../libs/fsExtra')
 const rra = require('../libs/recursiveReaddirAsync')
 const Logger = require('../Logger')
 const { AudioMimeType } = require('./constants')
+const { getProxyAgent } = require('./proxyAgent')
 
 /**
  * Make sure folder separator is POSIX for Windows file paths. e.g. "C:\Users\Abs" becomes "C:/Users/Abs"
@@ -298,16 +299,18 @@ module.exports.getFilePathItemFromFileUpdate = (fileUpdate) => {
 module.exports.downloadFile = (url, filepath, contentTypeFilter = null) => {
   return new Promise(async (resolve, reject) => {
     Logger.debug(`[fileUtils] Downloading file to ${filepath}`)
+    const agent = global.DisableSsrfRequestFilter?.(url) ? getProxyAgent(url) : ssrfFilter(url)
     axios({
       url,
       method: 'GET',
       responseType: 'stream',
+      proxy: false,
       headers: {
         'User-Agent': 'audiobookshelf (+https://audiobookshelf.org)'
       },
       timeout: 30000,
-      httpAgent: global.DisableSsrfRequestFilter?.(url) ? null : ssrfFilter(url),
-      httpsAgent: global.DisableSsrfRequestFilter?.(url) ? null : ssrfFilter(url)
+      httpAgent: agent,
+      httpsAgent: agent
     })
       .then((response) => {
         // Validate content type

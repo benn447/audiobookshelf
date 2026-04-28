@@ -1,6 +1,7 @@
 const axios = require('axios')
 const ssrfFilter = require('ssrf-req-filter')
 const Logger = require('../Logger')
+const { getProxyAgent } = require('./proxyAgent')
 const { xmlToJSON, timestampToSeconds } = require('./index')
 const htmlSanitizer = require('../utils/htmlSanitizer')
 const Fuse = require('../libs/fusejs')
@@ -363,18 +364,21 @@ module.exports.getPodcastFeed = (feedUrl, excludeEpisodeMetadata = false) => {
     userAgent = 'audiobookshelf (+https://audiobookshelf.org; like iTMS) - CBC'
   }
 
+  const agent = global.DisableSsrfRequestFilter?.(feedUrl) ? getProxyAgent(feedUrl) : ssrfFilter(feedUrl)
+
   return axios({
     url: feedUrl,
     method: 'GET',
     timeout: global.PodcastDownloadTimeout,
     responseType: 'arraybuffer',
+    proxy: false,
     headers: {
       Accept: 'application/rss+xml, application/xhtml+xml, application/xml, */*;q=0.8',
       'Accept-Encoding': 'gzip, compress, deflate',
       'User-Agent': userAgent
     },
-    httpAgent: global.DisableSsrfRequestFilter?.(feedUrl) ? null : ssrfFilter(feedUrl),
-    httpsAgent: global.DisableSsrfRequestFilter?.(feedUrl) ? null : ssrfFilter(feedUrl)
+    httpAgent: agent,
+    httpsAgent: agent
   })
     .then(async (data) => {
       // Adding support for ios-8859-1 encoded RSS feeds.
